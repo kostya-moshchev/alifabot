@@ -35,13 +35,13 @@ class Location(Base):
     task_photo: Mapped[str] = mapped_column(String, nullable=True)
 
 class Photo(Base):
-    __tablename__ = 'photoes'
+    __tablename__ = 'photos'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_tg_id: Mapped[int] = mapped_column(ForeignKey('users.tg_id'))
     photo: Mapped[str] = mapped_column(String)  # URL or path to the photo
     location_id: Mapped[int] = mapped_column(ForeignKey('locations.id'))
-    sent_at: Mapped[datetime] = mapped_column(DateTime) #  default=datetime.utcnow
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) #  default=datetime.utcnow
     admin_true: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
 
 class Winner(Base):

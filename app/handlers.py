@@ -8,7 +8,6 @@ from aiogram.fsm.context import FSMContext
 
 import app.keybords as kd
 import app.database.requests as rq
-from app.database.requests import get_location, save_photo
 from app.keybords import location_info
 
 
@@ -18,6 +17,7 @@ router = Router()
 class Photo(StatesGroup):
     photo = State()
     replace_photo = State()
+
 
 class Reg(StatesGroup):
     name = State()
@@ -33,34 +33,27 @@ async def main(callback: CallbackQuery, state: FSMContext):
 @router.message(Reg.name)
 async def main(message: Message, state: FSMContext):
     username = message.from_user.username if message.from_user.username else None
-    await rq.set_user(
-        tg_id=message.from_user.id, name=message.text, username=username)
-    await message.answer(
-        f'Спасибо, регистрация завершена.\n Ваша фамилия и имя: {message.text}',
-        reply_markup=kd.main_one
-    )
+    await rq.set_user(tg_id=message.from_user.id, name=message.text, username=username)
+    await message.answer(f'Спасибо, регистрация завершена.\n Ваша фамилия и имя: {message.text}',
+        reply_markup=kd.main_one)
     await state.clear()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     user_in_bd = await rq.user_in_bd(message.from_user.id)
+    start_message = ('Привет, я бот, который поможет тебе познакомиться с памятными местями для компании Альфасигма, '
+                     'а если ты умпеешь сфотографирорваться первым рядом со всем местами, то ты выиграешь наш конкурс '
+                     'и получишь приз на конференции!!!')
     if not user_in_bd:
-        await message.answer('Привет, я бот, который поможет тебе познакомиться с памятными местями для компании Альфасигма, а если ты умпеешь сфотографирорваться первым рядом со всем местами, то ты выиграешь наш конкурс и получишь приз на конференции!!!',
-                          reply_markup=kd.reg)
+        await message.answer(start_message, reply_markup=kd.reg)
     else:
-        await message.answer('Привет, я бот, который поможет тебе познакомиться с памятными местями для компании Альфасигма, а если ты умпеешь сфотографирорваться первым рядом со всем местами, то ты выиграешь наш конкурс и получишь приз на конференции!!!',
-                          reply_markup=kd.main)
+        await message.answer(start_message, reply_markup=kd.main)
     if message.from_user.id == int('973404201'):
         await message.answer('Вы авторизовались как админ', reply_markup=kd.main_admin)
 
 @router.message(Command('help'))
 async def get_help(message: Message):
     await message.answer('Это команда /help')
-
-@router.message(F.data =='')
-async def main(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer('Выберите локацию:', reply_markup=await kd.inline_location())
 
 @router.callback_query(F.data =='main')
 async def main(callback: CallbackQuery,  state: FSMContext):
@@ -72,7 +65,7 @@ async def main(callback: CallbackQuery,  state: FSMContext):
 @router.callback_query(F.data.startswith('location_'))
 async def main(callback: CallbackQuery):
     await callback.answer()
-    lctn = await get_location(callback.data.split('_')[1])
+    lctn = await rq.get_location(callback.data.split('_')[1])
     if lctn:
         await callback.message.answer_photo(caption=lctn.description, photo=lctn.photo, reply_markup=location_info(lctn))
     else:
@@ -97,7 +90,7 @@ async def main(callback: CallbackQuery, state: FSMContext):
 
     result = await rq.get_photos_from_db_with_location(id_location, callback.from_user.id)
     await state.update_data(id_location=id_location)
-    if result != None:
+    if result:
         photo_id, photo_exists = result
         await state.update_data(photo_id=photo_id, photo_exists=photo_exists)
         await callback.message.answer_photo(photo=photo_exists, caption='У вас уже есть фото для этой локации. Вы хотите заменить его?', reply_markup=kd.replace_or_cancel)
@@ -106,7 +99,7 @@ async def main(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer('Отправьте ваше фото', reply_markup=kd.to_the_main_page)
 
 @router.message(Photo.photo)
-async def main(message: Message, state: FSMContext):
+async def save_photo(message: Message, state: FSMContext):
     data = await state.get_data()
     id_location = data.get('id_location')
     if message.photo:
@@ -114,7 +107,7 @@ async def main(message: Message, state: FSMContext):
         # print(photo_file_id) # Для получения id фотки любой
         user_tg_id = message.from_user.id
         sent_at = datetime.utcnow()
-        await save_photo(user_tg_id,  photo_file_id, id_location, sent_at)
+        await rq.save_photo_to_db(user_tg_id,  photo_file_id, id_location, sent_at)
         admin_chat_id = -4240133579
         await message.bot.send_photo(admin_chat_id, photo=photo_file_id, caption=f'Photo from location ID: {id_location}')
         
