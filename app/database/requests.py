@@ -151,33 +151,3 @@ async def answer_admin_win():
 async def get_user_id_by_photo_id(photo_id):
     async with async_session() as session:
         return await session.scalar(select(Photo.user_tg_id).where(Photo.id == photo_id))
-
-import zipfile
-from io import BytesIO
-import requests
-import os
-from dotenv import load_dotenv
-from aiogram.types import InputFile
-
-load_dotenv()
-TOKEN=os.getenv('TOKEN')
-
-async def download_photos():
-    async with async_session() as session:
-        # with BytesIO() as zip_buffer:
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-            result = await session.execute(select(Photo))
-            photos = result.scalars().all()
-            # photos = session.query(Photo).all()
-            for photo in photos:
-                file_id = photo.photo
-                url = f'https://api.telegram.org/file/bot{TOKEN}/{file_id}'
-                response = requests.get(url)
-                if response.status_code == 200:
-                    zip_file.writestr(f'{file_id}.jpg', response.content)
-                else:
-                    print(f'Ошибка при загрузке фотографии {file_id}: {response.status_code}')
-
-        zip_buffer.seek(0)
-        return InputFile(zip_buffer, 'photos.zip')
