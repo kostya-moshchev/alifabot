@@ -41,9 +41,8 @@ async def main(message: Message, state: FSMContext):
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     user_in_bd = await rq.user_in_bd(message.from_user.id)
-    start_message = ('Привет, я бот, который поможет тебе познакомиться с памятными местями для компании Альфасигма, '
-                     'а если ты умпеешь сфотографирорваться первым рядом со всем местами, то ты выиграешь наш конкурс '
-                     'и получишь приз на конференции!!!')
+    start_message = ('Привет, посмотри список мест, в которых необходимо выполнить задания и ЖМИ на любую кнопку.\n'
+                     'Для победы необходимо пройти всё места!')
     if not user_in_bd:
         await message.answer(start_message, reply_markup=kd.reg)
     else:
@@ -53,7 +52,8 @@ async def cmd_start(message: Message):
 
 @router.message(Command('help'))
 async def get_help(message: Message):
-    await message.answer('Это команда /help')
+    await message.answer('Для кнопки помощь: Если у тебя возникли трудности или вопросы — ты всегда можешь обратиться к моему помощнику:\nЛевашова Елена\n+7 903 968-59-32')
+
 
 @router.callback_query(F.data =='main')
 async def main(callback: CallbackQuery,  state: FSMContext):
@@ -159,6 +159,14 @@ async def answer_admin_win(message: Message):
         await message.answer(f"Список победителей:\n\n{winners_text}")
     else:
         await message.answer("На данный момент нет победителей.")
+
+@router.message(F.text == 'Скачать все фотографии')
+async def download_photos(message: Message):
+    document = await rq.download_photos()
+    if document:
+        await message.reply_document(document=document, filename='photos.zip')
+    else:
+        await message.answer("Не получатеся скачать фотографии")
 
 
 @router.callback_query(F.data.startswith('yes_'))
