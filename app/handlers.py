@@ -13,6 +13,8 @@ from app.keybords import location_info
 
 router = Router()
 
+ADMIN_ID = (384883470, 973404201,)
+
 
 class Photo(StatesGroup):
     photo = State()
@@ -34,7 +36,7 @@ async def main(callback: CallbackQuery, state: FSMContext):
 async def main(message: Message, state: FSMContext):
     username = message.from_user.username if message.from_user.username else None
     await rq.set_user(tg_id=message.from_user.id, name=message.text, username=username)
-    await message.answer(f'Спасибо, регистрация завершена.\n Ваша фамилия и имя: {message.text}',
+    await message.answer(f'Спасибо, регистрация завершена.\n Фамилия и имя: {message.text}',
         reply_markup=kd.main_one)
     await state.clear()
 
@@ -47,7 +49,7 @@ async def cmd_start(message: Message):
         await message.answer(start_message, reply_markup=kd.reg)
     else:
         await message.answer(start_message, reply_markup=kd.main)
-    if message.from_user.id == int('973404201'):
+    if message.from_user.id in ADMIN_ID:
         await message.answer('Вы авторизовались как админ', reply_markup=kd.main_admin)
 
 @router.message(Command('help'))
@@ -59,15 +61,20 @@ async def get_help(message: Message):
 async def main(callback: CallbackQuery,  state: FSMContext):
     await state.clear()
     await callback.answer()
+    await callback.message.delete()
     await callback.message.answer('Выберите локацию:', reply_markup=await kd.inline_location())
-
 
 @router.callback_query(F.data.startswith('location_'))
 async def main(callback: CallbackQuery):
     await callback.answer()
+    await callback.message.delete()
     lctn = await rq.get_location(callback.data.split('_')[1])
     if lctn:
-        await callback.message.answer_photo(caption=lctn.description, photo=lctn.photo, reply_markup=location_info(lctn))
+        if len(lctn.description) < 1024:
+            await callback.message.answer_photo(caption=lctn.description, photo=lctn.photo, reply_markup=location_info(lctn))
+        else:
+            await callback.message.answer_photo(photo=lctn.photo)
+            await callback.message.answer(lctn.description, reply_markup=location_info(lctn))
     else:
         await callback.message.edit_text("Location not found")
 

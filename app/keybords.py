@@ -49,7 +49,7 @@ def location_info(location):
         [InlineKeyboardButton(text='Маршрут', url=location.locations)],
         [InlineKeyboardButton(text='Задание', callback_data=f'task_{location.id}')],
         [InlineKeyboardButton(text='Отправить фото', callback_data=f'my_photo_{location.id}')],
-        [InlineKeyboardButton(text='Назад', callback_data='main')],
+        [InlineKeyboardButton(text='👈Назад', callback_data='main')],
     ])
 
 # админ
