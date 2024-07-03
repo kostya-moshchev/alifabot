@@ -134,18 +134,65 @@ async def check_winner(user_id):
                 return current_place
             return False
 
+# async def answer_admin_win():
+#     async with async_session() as session:
+#         winners_query = (
+#             select(Winner, User.name, User.username)
+#             .join(User, Winner.user_id == User.id)
+#             .order_by(Winner.place)
+#         )
+        
+#         winners_rows = await session.execute(winners_query)
+#         return [
+#             f"Место: {winner.place}, Имя: {name}, Username: @{username}"
+#             for winner, name, username in winners_rows
+#         ]
 async def answer_admin_win():
     async with async_session() as session:
         winners_query = (
-            select(Winner, User.name, User.username)
-            .join(User, Winner.user_id == User.id)
-            .order_by(Winner.place)
+            select(
+                User.name,
+                User.username,
+                func.count(Photo.id).label('photo_count'),
+                func.max(Photo.sent_at).label('last_photo_time')
+            )
+            .join(Photo, Photo.user_tg_id == User.tg_id)
+            .filter(Photo.admin_true == 1)
+            .group_by(User.id)
+            .order_by(func.count(Photo.id).desc(), func.max(Photo.sent_at))
         )
         
         winners_rows = await session.execute(winners_query)
         return [
-            f"Место: {winner.place}, Имя: {name}, Username: @{username}"
-            for winner, name, username in winners_rows
+            f"Имя: {name}, Username: @{username}, Подтвержденные фотографии: {photo_count}, Время последней фотографии: {last_photo_time}"
+            for name, username, photo_count, last_photo_time in winners_rows
+        ]
+
+async def get_all_photos():
+    async with async_session() as session:
+        photos_query = (
+            select(
+                Photo.photo,
+                User.name,
+                User.username,
+                Location.name.label('location_name'),
+                Photo.sent_at
+            )
+            .join(User, Photo.user_tg_id == User.tg_id)
+            .join(Location, Photo.location_id == Location.id)
+            .order_by(Photo.sent_at)
+        )
+        
+        photos_rows = await session.execute(photos_query)
+        return [
+            {
+                "photo": photo,
+                "name": name,
+                "username": username,
+                "location_name": location_name,
+                "sent_at": sent_at
+            }
+            for photo, name, username, location_name, sent_at in photos_rows
         ]
 
 async def get_user_id_by_photo_id(photo_id):

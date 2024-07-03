@@ -158,6 +158,15 @@ async def send_next_photo_for_review(chat_id, bot):
 async def answer_admin(message: Message):
     await send_next_photo_for_review(message.chat.id, message.bot)
 
+# @router.message(F.text == '🏆Победители🏆')
+# async def answer_admin_win(message: Message):
+#     winners = await rq.answer_admin_win()
+#     if winners:
+#         winners_text = "\n\n".join(winners)
+#         await message.answer(f"Список победителей:\n\n{winners_text}")
+#     else:
+#         await message.answer("На данный момент нет победителей.")
+
 @router.message(F.text == '🏆Победители🏆')
 async def answer_admin_win(message: Message):
     winners = await rq.answer_admin_win()
@@ -166,6 +175,21 @@ async def answer_admin_win(message: Message):
         await message.answer(f"Список победителей:\n\n{winners_text}")
     else:
         await message.answer("На данный момент нет победителей.")
+
+@router.message(F.text == 'фото')
+async def view_photos(message: Message):
+    photos = await rq.get_all_photos()
+    if photos:
+        for photo in photos:
+            caption = (
+                f"Имя: {photo['name']}\n"
+                f"Username: @{photo['username']}\n"
+                f"Локация: {photo['location_name']}\n"
+                f"Время: {photo['sent_at']}"
+            )
+            await message.bot.send_photo(chat_id=message.chat.id, photo=photo['photo'], caption=caption)
+    else:
+        await message.answer("На данный момент нет фотографий.")
 
 @router.message(F.text == 'Скачать все фотографии')
 async def download_photos(message: Message):

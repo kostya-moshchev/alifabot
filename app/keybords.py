@@ -55,7 +55,8 @@ def location_info(location):
 # админ
 main_admin = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Просмотр фото')],
-    [KeyboardButton(text='🏆Победители🏆')]
+    [KeyboardButton(text='🏆Победители🏆')],
+    [KeyboardButton(text='фото')]
 ], resize_keyboard=True)
 
 async def create_admin_answer_keyboard(id_photo):
