@@ -13,7 +13,7 @@ from app.keybords import location_info
 
 router = Router()
 
-ADMIN_ID = (384883470, 973404201,)
+ADMIN_ID = (384883470, 973404201,761661853)
 
 
 class Photo(StatesGroup):
@@ -54,7 +54,7 @@ async def cmd_start(message: Message):
 
 @router.message(Command('help'))
 async def get_help(message: Message):
-    await message.answer('Для кнопки помощь: Если у тебя возникли трудности или вопросы — ты всегда можешь обратиться к моему помощнику:\nЛевашова Елена\n+7 903 968-59-32')
+    await message.answer('Если у тебя возникли трудности или вопросы — ты всегда можешь обратиться к моему помощнику:\nЛевашова Елена\n+7 903 968-59-32')
 
 
 @router.callback_query(F.data =='main')
@@ -184,7 +184,7 @@ async def approve_photo(callback: CallbackQuery):
     await callback.message.delete()
     user_id = await rq.get_user_id_by_photo_id(photo_id)
     photo_tg_id = await rq.get_photo_tg_id(photo_id)
-    await callback.bot.send_photo(user_id, photo=photo_tg_id, caption="Ваша фотография одобрена")
+    await callback.bot.send_photo(user_id, photo=photo_tg_id, caption="Ваша фотография одобрена", reply_markup=kd.to_the_main_page)
     is_winner = await rq.check_winner(user_id)
     if is_winner:
         await callback.bot.send_message(user_id, f"Поздравляем! Вы прошли игру и заняли {is_winner} место")
@@ -197,7 +197,7 @@ async def reject_photo(callback: CallbackQuery):
     user_id = await rq.get_user_id_by_photo_id(photo_id)
     if user_id:
         photo_tg_id = await rq.get_photo_tg_id(photo_id)
-        await callback.bot.send_photo(user_id, photo=photo_tg_id, caption="К сожалению, ваша фотография не удовлетворяет установленным требованиям.")
+        await callback.bot.send_photo(user_id, photo=photo_tg_id, caption="К сожалению, ваша фотография не удовлетворяет установленным требованиям.", reply_markup=kd.to_the_main_page)
     await rq.delete_photo_from_db(photo_id)
     await callback.answer('Фото отклонено.')
     await callback.message.delete()
@@ -206,4 +206,4 @@ async def reject_photo(callback: CallbackQuery):
 
 @router.message()
 async def handle_unknown_message(message: Message):
-    await message.reply("Извините, я не понимаю этот запрос. Пожалуйста, используйте команду /help для получения списка доступных команд.")
+    await message.reply("Извините, я не понимаю этот запрос. Пожалуйста, используйте команду /help для получения списка доступных команд.", reply_markup=kd.to_the_main_page)
